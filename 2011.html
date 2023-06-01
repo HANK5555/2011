@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>21點遊戲</title>
+  <style>
+    /* CSS 樣式 */
+    /* 在這裡自定義你的遊戲樣式 */
+  </style>
+</head>
+<body>
+  <h1>21點遊戲</h1>
+  <div id="playerDeck">
+    <h2>玩家</h2>
+    <p>籌碼: <span id="playerChips">300</span></p>
+    <p>下注金額: 
+      <select id="betAmount">
+        <option value="10">10</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </p>
+    <button onclick="startGame()">開始遊戲</button>
+    <button onclick="playerHit()">叫牌</button>
+    <button onclick="playerStand()">停牌</button>
+    <div id="playerCards"></div>
+  </div>
+  <div id="computerDeck">
+    <h2>電腦</h2>
+    <p>手牌點數: <span id="computerPoints"></span></p>
+    <div id="computerCards"></div>
+    <button onclick="computerTurn()">電腦回合</button>
+  </div>
+  <p id="result"></p>
+
+  <script>
+    // JavaScript 代碼
+    var playerChips = 300; // 玩家的籌碼
+    var playerPoints = 0; // 玩家手牌點數
+    var computerPoints = 0; // 電腦手牌點數
+    var playerCards = []; // 玩家手牌
+    var computerCards = []; // 電腦手牌
+
+    // 更新玩家的籌碼數量
+    function updateChips(amount) {
+      playerChips += amount;
+      document.getElementById('playerChips').innerText = playerChips;
+    }
+
+    // 開始遊戲
+    function startGame() {
+      var betAmount = parseInt(document.getElementById('betAmount').value);
+      if (betAmount > playerChips || betAmount < 10 || betAmount > 200) {
+        alert('下注金額無效');
+        return;
+      }
+      playerChips -= betAmount;
+      document.getElementById('playerChips').innerText = playerChips;
+
+      // 發牌
+      playerCards = [];
+      computerCards = [];
+      playerPoints = 0;
+      computerPoints = 0;
+
+      // 初始化撲克牌
+      var suits = ['♠', '♥', '♦', '♣'];
+      var ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+      var deck = [];
+      for (var suit of suits) {
+        for (var rank of ranks) {
+          deck.push(rank + suit);
+        }
+      }
+
+      // 隨機抽取兩張牌給玩家和電腦
+      playerCards.push(drawCard(deck));
+      playerCards.push(drawCard(deck));
+      computerCards.push(drawCard(deck));
+      computerCards.push(drawCard(deck));
+
+      // 顯示玩家和電腦的手牌
+      updatePlayerCards();
+      updateComputerCards();
+
+      // 計算點數
+      playerPoints = calculatePoints(playerCards);
+      computerPoints = calculatePoints(computerCards);
+      document.getElementById('playerPoints').innerText = playerPoints;
+      document.getElementById('computerPoints').innerText = '??';
+    }
+
+    // 玩家叫牌
+    function playerHit() {
+      // 抽一張牌
+      playerCards.push(drawCard(deck));
+
+      // 顯示玩家的手牌
+      updatePlayerCards();
+
+      // 計算點數
+      playerPoints = calculatePoints(playerCards);
+      document.getElementById('playerPoints').innerText = playerPoints;
+
+      // 判斷是否爆牌
+      if (playerPoints > 21) {
+        endGame('玩家爆牌，你輸了！');
+      }
+    }
+
+    // 玩家停牌
+    function playerStand() {
+      // 轉換到電腦回合
+      computerTurn();
+    }
+
+    // 電腦回合
+    function computerTurn() {
+      // 電腦根據規則決定是否叫牌
+      while (computerPoints < 17) {
+        computerCards.push(drawCard(deck));
+        computerPoints = calculatePoints(computerCards);
+        updateComputerCards();
+      }
+
+      // 比較雙方手牌點數
+      var result;
+      if (computerPoints > 21 || playerPoints > computerPoints) {
+        result = '你贏了！';
+        updateChips(betAmount * 2);
+      } else if (playerPoints < computerPoints) {
+        result = '你輸了！';
+      } else {
+        result = '平局！';
+        updateChips(betAmount);
+      }
+
+      endGame(result);
+    }
+
+    // 結束遊戲
+    function endGame(result) {
+      document.getElementById('result').innerText = result;
+      document.getElementById('betAmount').disabled = false;
+      document.getElementById('playerHit').disabled = true;
+      document.getElementById('playerStand').disabled = true;
+    }
+
+    // 抽取一張牌
+    function drawCard(deck) {
+      var randomIndex = Math.floor(Math.random() * deck.length);
+      var card = deck[randomIndex];
+      deck.splice(randomIndex, 1);
+      return card;
+    }
+
+    // 計算手牌點數
+    function calculatePoints(cards) {
+      var points = 0;
+      var aceCount = 0;
+      for (var card of cards) {
+        var rank = card.substring(0, card.length - 1);
+        if (rank === 'A') {
+          points += 11;
+          aceCount++;
+        } else if (rank === 'K' || rank === 'Q' || rank === 'J') {
+          points += 10;
+        } else {
+          points += parseInt(rank);
+        }
+      }
+      // 考慮A的情況
+      while (points > 21 && aceCount > 0) {
+        points -= 10;
+        aceCount--;
+      }
+      return points;
+    }
+
+    // 更新玩家手牌的顯示
+    function updatePlayerCards() {
+      var playerCardsDiv = document.getElementById('playerCards');
+      playerCardsDiv.innerHTML = '';
+      for (var card of playerCards) {
+        var cardDiv = document.createElement('div');
+        cardDiv.className = 'card';
+        cardDiv.innerText = card;
+        playerCardsDiv.appendChild(cardDiv);
+      }
+    }
+
+    // 更新電腦手牌的顯示
+    function updateComputerCards() {
+      var computerCardsDiv = document.getElementById('computerCards');
+      computerCardsDiv.innerHTML = '';
+      for (var card of computerCards) {
+        var cardDiv = document.createElement('div');
+        cardDiv.className = 'card';
+        cardDiv.innerText = card;
+        computerCardsDiv.appendChild(cardDiv);
+      }
+    }
+  </script>
+</body>
+</html>
